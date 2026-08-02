@@ -80,8 +80,12 @@ a{color:inherit}
 .btn-ghost:hover{background:var(--dark);color:var(--cream)}
 
 /* hero marquee */
-.marquee{position:relative;z-index:2;overflow:hidden;padding:.75rem 0;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);background:rgba(239,232,218,.55)}
-.marquee-track{display:flex;gap:.75rem;width:max-content;animation:slide 46s linear infinite}
+.marquee{position:relative;z-index:2;overflow:hidden;padding:.75rem 0;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);background:rgba(239,232,218,.55);
+  -webkit-overflow-scrolling:touch;scrollbar-width:none}
+.marquee::-webkit-scrollbar{display:none}
+.marquee-track{display:flex;gap:.75rem;width:max-content;animation:slide 46s linear infinite;will-change:transform}
+/* once JS takes over, it drives the transform at a fixed px/second instead */
+.marquee-track.js-driven{animation:none}
 .marquee:hover .marquee-track{animation-play-state:paused}
 .marquee img{height:clamp(122px,17vw,190px);width:auto;border-radius:2px;object-fit:cover}
 @keyframes slide{from{transform:translateX(0)}to{transform:translateX(-50%)}}
@@ -123,7 +127,17 @@ blockquote em{font-style:italic;color:var(--gold-l)}
 .reels{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:clamp(.7rem,1.4vw,1.4rem);margin-top:clamp(.7rem,1.4vw,1.4rem)}
 .reel{position:relative;border-radius:2px;overflow:hidden;background:var(--tan)}
 .reel video{width:100%;aspect-ratio:9/16;object-fit:cover}
-.reel span{position:absolute;left:0;bottom:0;width:100%;padding:.9rem 1rem;color:var(--cream);background:linear-gradient(transparent,rgba(36,29,22,.75));font-family:var(--display);font-size:.625rem;letter-spacing:.26em;text-transform:uppercase}
+.reel span{position:absolute;left:0;bottom:0;width:100%;padding:.9rem 1rem;color:var(--cream);background:linear-gradient(transparent,rgba(36,29,22,.75));font-family:var(--display);font-size:.625rem;letter-spacing:.26em;text-transform:uppercase;pointer-events:none}
+/* tap-to-play: shown whenever autoplay is unavailable (iOS Low Power Mode, reduced motion, data saver) */
+.reel-play{position:absolute;inset:0;z-index:3;display:none;align-items:center;justify-content:center;
+  background:rgba(36,29,22,.28);border:0;cursor:pointer;padding:0}
+.reel.manual .reel-play{display:flex}
+.reel.playing .reel-play{display:none}
+.reel-play i{width:54px;height:54px;border-radius:50%;background:rgba(244,239,228,.92);
+  display:grid;place-items:center;transition:transform .25s}
+.reel-play:hover i{transform:scale(1.08)}
+.reel-play i::after{content:"";border-left:15px solid var(--dark);border-top:9px solid transparent;
+  border-bottom:9px solid transparent;margin-left:4px}
 
 /* ---------- craft ---------- */
 .craft-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:clamp(2rem,4vw,3.5rem);margin-top:clamp(2.5rem,5vw,4rem)}
@@ -198,13 +212,18 @@ blockquote em{font-style:italic;color:var(--gold-l)}
 @keyframes rise{to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){
   *{animation:none !important;transition:none !important}
-  .rv{opacity:1;transform:none}
+  .rv{opacity:1 !important;transform:none !important}
+  /* critical: without the rise animation these must not stay at opacity 0 */
+  .load .hero-inner>*{opacity:1 !important;transform:none !important}
   html{scroll-behavior:auto}
   .marquee-track{transform:none}
+  .marquee{overflow-x:auto;-webkit-overflow-scrolling:touch}
 }
+/* failsafe: if JS never runs, nothing stays hidden */
+.no-js .rv,.no-js .hero-inner>*{opacity:1 !important;transform:none !important}
 </style>
 </head>
-<body class="load">
+<body class="load no-js">
 
 <nav class="nav" id="nav">
   <a href="#top" aria-label="Navid Boutique, back to top"><img class="nav-logo" src="assets/img/logo.png" alt="Navid Boutique"></a>
@@ -335,11 +354,11 @@ blockquote em{font-style:italic;color:var(--gold-l)}
   </div>
 
   <div class="reels">
-    <div class="reel rv"><video src="assets/video/reel1.mp4" poster="assets/video/reel1.jpg" muted loop playsinline preload="none" aria-label="Walking through the shop"></video><span>On the floor</span></div>
-    <div class="reel rv"><video src="assets/video/reel2.mp4" poster="assets/video/reel2.jpg" muted loop playsinline preload="none" aria-label="New arrivals in store"></video><span>New in</span></div>
-    <div class="reel rv"><video src="assets/video/reel3.mp4" poster="assets/video/reel3.jpg" muted loop playsinline preload="none" aria-label="Details from the collection"></video><span>Up close</span></div>
-    <div class="reel rv"><video src="assets/video/reel5.mp4" poster="assets/video/reel5.jpg" muted loop playsinline preload="none" aria-label="Around the shop floor"></video><span>Around the shop</span></div>
-    <div class="reel rv"><video src="assets/video/reel6.mp4" poster="assets/video/reel6.jpg" muted loop playsinline preload="none" aria-label="A closer look at new pieces"></video><span>A closer look</span></div>
+    <div class="reel rv"><video src="assets/video/reel1.mp4" poster="assets/video/reel1.jpg" muted loop playsinline preload="metadata" aria-label="Walking through the shop"></video><button class="reel-play" aria-label="Play video"><i></i></button><span>On the floor</span></div>
+    <div class="reel rv"><video src="assets/video/reel2.mp4" poster="assets/video/reel2.jpg" muted loop playsinline preload="metadata" aria-label="New arrivals in store"></video><button class="reel-play" aria-label="Play video"><i></i></button><span>New in</span></div>
+    <div class="reel rv"><video src="assets/video/reel3.mp4" poster="assets/video/reel3.jpg" muted loop playsinline preload="metadata" aria-label="Details from the collection"></video><button class="reel-play" aria-label="Play video"><i></i></button><span>Up close</span></div>
+    <div class="reel rv"><video src="assets/video/reel5.mp4" poster="assets/video/reel5.jpg" muted loop playsinline preload="metadata" aria-label="Around the shop floor"></video><button class="reel-play" aria-label="Play video"><i></i></button><span>Around the shop</span></div>
+    <div class="reel rv"><video src="assets/video/reel6.mp4" poster="assets/video/reel6.jpg" muted loop playsinline preload="metadata" aria-label="A closer look at new pieces"></video><button class="reel-play" aria-label="Play video"><i></i></button><span>A closer look</span></div>
   </div>
 
   <div class="grid" style="margin-top:clamp(.7rem,1.4vw,1.4rem)">
@@ -517,6 +536,7 @@ blockquote em{font-style:italic;color:var(--gold-l)}
 
 <script>
 (function(){
+  document.body.classList.remove('no-js');
   var TZ='America/Toronto';
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -533,24 +553,96 @@ blockquote em{font-style:italic;color:var(--gold-l)}
     el.style.transitionDelay=(Math.min(i%4,3)*70)+'ms'; io.observe(el);
   });
 
-  /* seamless marquee: duplicate the strip once */
+  /* Marquee: constant 66 px/second on every device.
+     The old CSS animation used a fixed 46s duration, so a narrower phone strip
+     travelled far fewer pixels in the same time and looked much slower. */
   var mq=document.getElementById('mq');
-  if(mq && !reduce){ mq.innerHTML += mq.innerHTML; }
+  if(mq && !reduce){
+    mq.innerHTML += mq.innerHTML;          // duplicate for a seamless loop
 
-  /* play reels only while on screen */
-  var vids=document.querySelectorAll('.reel video');
-  if(!reduce){
-    var vio=new IntersectionObserver(function(es){
+    var SPEED = 66;                         // px per second, matches the desktop feel
+    var offset = 0, half = 0, last = null, paused = false;
+
+    var measure = function(){ half = mq.scrollWidth / 2; };
+    if(document.readyState === 'complete') measure();
+    window.addEventListener('load', measure);
+    window.addEventListener('resize', measure);
+    measure();
+
+    var marqueeWrap = mq.parentElement;
+    marqueeWrap.addEventListener('mouseenter', function(){ paused = true; });
+    marqueeWrap.addEventListener('mouseleave', function(){ paused = false; });
+    // let a finger drag it, then resume
+    marqueeWrap.addEventListener('touchstart', function(){ paused = true; }, {passive:true});
+    marqueeWrap.addEventListener('touchend', function(){ paused = false; }, {passive:true});
+    document.addEventListener('visibilitychange', function(){ last = null; });
+
+    mq.classList.add('js-driven');
+
+    var step = function(now){
+      if(last === null) last = now;
+      var dt = (now - last) / 1000;
+      last = now;
+      if(!paused && half > 0){
+        offset += SPEED * dt;
+        if(offset >= half) offset -= half;   // wrap seamlessly
+        mq.style.transform = 'translateX(' + (-offset) + 'px)';
+      }
+      requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+
+  /* hard failsafe: nothing may sit at opacity 0 after 2.5s, whatever else went wrong */
+  setTimeout(function(){
+    document.querySelectorAll('.rv').forEach(function(el){ el.classList.add('in'); });
+    document.body.classList.remove('load');
+  }, 2500);
+
+  /* reels: try autoplay, fall back to tap-to-play.
+     iOS blocks autoplay entirely in Low Power Mode, so the button is the reliable path. */
+  document.querySelectorAll('.reel').forEach(function(reel){
+    var v = reel.querySelector('video');
+    var btn = reel.querySelector('.reel-play');
+    if(!v) return;
+
+    var markManual = function(){ reel.classList.remove('playing'); reel.classList.add('manual'); };
+    var markPlaying = function(){ reel.classList.remove('manual'); reel.classList.add('playing'); };
+
+    var tryPlay = function(){
+      var p = v.play();
+      if(p && p.then){ p.then(markPlaying).catch(markManual); }
+      else { markPlaying(); }
+    };
+
+    // tapping the button always works — it's a direct user gesture
+    if(btn){
+      btn.addEventListener('click', function(){
+        v.muted = true;              // keep muted so iOS permits inline playback
+        v.play().then(markPlaying).catch(function(){
+          v.setAttribute('controls','');   // last resort: native player
+          markManual();
+        });
+      });
+    }
+    // tapping the video itself pauses/resumes
+    v.addEventListener('click', function(){
+      if(v.paused){ v.play().then(markPlaying).catch(markManual); }
+      else { v.pause(); markManual(); }
+    });
+    v.addEventListener('pause', markManual);
+    v.addEventListener('playing', markPlaying);
+
+    if(reduce){ markManual(); return; }
+
+    var vio = new IntersectionObserver(function(es){
       es.forEach(function(e){
-        var v=e.target;
-        if(e.isIntersecting){ v.preload='auto'; var p=v.play(); if(p&&p.catch)p.catch(function(){}); }
+        if(e.isIntersecting){ tryPlay(); }
         else { v.pause(); }
       });
     },{threshold:.35});
-    vids.forEach(function(v){ vio.observe(v); });
-  } else {
-    vids.forEach(function(v){ v.setAttribute('controls',''); });
-  }
+    vio.observe(v);
+  });
 
   /* lightbox */
   var lb=document.getElementById('lb'), lbImg=document.getElementById('lbImg'), lbCap=document.getElementById('lbCap');
